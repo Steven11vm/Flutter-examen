@@ -1,5 +1,6 @@
 import 'package:examen/Modelos/Peaje.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -79,32 +80,31 @@ class _EditarState extends State<Editar> {
     }
   }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate() &&
-        _selectedPeaje != null &&
-        _selectedCategoria != null) {
-      final String placa = _placaController.text;
-      final String fecha = _fechaController.text;
-      final int valor = int.tryParse(_valorController.text) ?? 0;
+   void _submitForm() async {
+  if (_formKey.currentState!.validate() &&
+      _selectedPeaje != null &&
+      _selectedCategoria != null) {
+    final String placa = _placaController.text;
+    final String fecha = _fechaController.text;
+    final int valor = int.tryParse(_valorController.text) ?? 0;
 
-      // Parse the date to the format the server expects
-      DateTime parsedDate = DateTime.parse(fecha);
-      String formattedDate = parsedDate.toIso8601String();
+    // Formatear la fecha al formato deseado (yyyy-MM-dd)
+    DateTime parsedDate = DateTime.parse(fecha);
+    String formattedDate = DateFormat('yyyy-MM-dd').format(parsedDate);
 
-      final requestData = {
-        'id': widget.peaje.id, // Añade el ID del peaje para actualizar
-        'placa': placa,
-        'nombrePeaje': _selectedPeaje,
-        'categoriaTarifaId': _selectedCategoria,
-        'fechaRegistro': formattedDate,
-        'valor': valor,
-      };
+    final requestData = {
+      'placa': placa,
+      'nombrePeaje': _selectedPeaje!,
+      'categoriaTarifaId': _selectedCategoria!,
+      'fechaRegistro': formattedDate,
+      'valor': valor.toString(), // Convertir el valor a String
+    };
 
-      print('Sending data: $requestData');
+    print('Sending data: $requestData');
 
-      final response = await http.put(
-        Uri.parse(
-            'http://localhost:5013/api/peaje/${widget.peaje.id}'), // Endpoint de actualización
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5013/api/peaje'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -114,20 +114,23 @@ class _EditarState extends State<Editar> {
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Actualización exitosa')));
-        Navigator.pop(
-            context, true); // Regresar a la pantalla anterior con éxito
+            .showSnackBar(SnackBar(content: Text('Editado exitosamente')));
       } else {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Fallo al actualizar')));
+            .showSnackBar(SnackBar(content: Text('Fallo al Editar')));
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Selecciona un peaje y una categoría')));
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error en la solicitud HTTP')));
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selecciona un peaje y una categoría')));
   }
+}
 
   @override
   Widget build(BuildContext context) {

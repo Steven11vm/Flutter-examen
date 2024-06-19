@@ -34,6 +34,7 @@ class _CameraScreenState extends State<CameraScreen> {
             _image == null
                 ? Text('No se ha tomado ninguna foto.')
                 : Image.file(_image!),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: _getImage,
               child: Text('Tomar Foto'),

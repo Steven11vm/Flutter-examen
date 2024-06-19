@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -75,29 +77,28 @@ class _PeajeFormState extends State<PeajeForm> {
   }
 
   void _submitForm() async {
-    if (_formKey.currentState!.validate() &&
-        _selectedPeaje != null &&
-        _selectedCategoria != null) {
-      final String placa = _placaController.text;
-      final String fecha = _fechaController.text;
-      final int valor = int.tryParse(_valorController.text) ?? 0;
+  if (_formKey.currentState!.validate() &&
+      _selectedPeaje != null &&
+      _selectedCategoria != null) {
+    final String placa = _placaController.text;
+    final String fecha = _fechaController.text;
+    final int valor = int.tryParse(_valorController.text) ?? 0;
 
-      // Parse the date to the format the server expects
-      DateTime parsedDate = DateTime.parse(fecha);
-      String formattedDate = parsedDate.toIso8601String();
+    // Formatear la fecha al formato deseado (yyyy-MM-dd)
+    DateTime parsedDate = DateTime.parse(fecha);
+    String formattedDate = DateFormat('yyyy-MM-dd').format(parsedDate);
 
-      final requestData = {
-        'placa': placa,
-        'nombrePeaje':
-            _selectedPeaje, // Asegúrate de que este campo coincida con el campo esperado por el servidor
-        'categoriaTarifaId': _selectedCategoria,
-        'fechaRegistro': formattedDate,
-        'valor': valor,
-        
-      };
+    final requestData = {
+      'placa': placa,
+      'nombrePeaje': _selectedPeaje!,
+      'categoriaTarifaId': _selectedCategoria!,
+      'fechaRegistro': formattedDate,
+      'valor': valor.toString(), // Convertir el valor a String
+    };
 
-      print('Sending data: $requestData');
+    print('Sending data: $requestData');
 
+    try {
       final response = await http.post(
         Uri.parse('http://localhost:5013/api/peaje'),
         headers: <String, String>{
@@ -116,11 +117,17 @@ class _PeajeFormState extends State<PeajeForm> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Fallo al registrar')));
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Selecciona un peaje y una categoría')));
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error en la solicitud HTTP')));
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selecciona un peaje y una categoría')));
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
